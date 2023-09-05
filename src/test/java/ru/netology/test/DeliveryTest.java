@@ -1,17 +1,18 @@
 package ru.netology.test;
 
+import com.codeborne.selenide.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import ru.netology.data.DataGenerator;
-import com.codeborne.selenide.Condition;
 import org.openqa.selenium.Keys;
+import ru.netology.data.DataGenerator;
 
 import java.time.Duration;
 
+import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selectors.withText;
-import static com.codeborne.selenide.Selenide.*;
 
 class DeliveryTest {
 
@@ -28,30 +29,42 @@ class DeliveryTest {
         var firstMeetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
         var daysToAddForSecondMeeting = 7;
         var secondMeetingDate = DataGenerator.generateDate(daysToAddForSecondMeeting);
-        $("[placeholder='Город']").setValue(validUser.getCity());
-        $("[placeholder='Дата встречи']").sendKeys(Keys.chord(Keys.SHIFT, Keys.UP), Keys.DELETE);
-        $("[placeholder='Дата встречи']").setValue(firstMeetingDate);
-        $("[name='name']").setValue(validUser.getName());
-        $("[name='phone']").setValue(validUser.getPhone());
-        $(".checkbox__box").click();
-        $$("button").find(Condition.exactText("Запланировать")).click();
-
-        if ($(withText("Доставка в выбранный город недоступна")).isDisplayed()) {
-            int i = validUser.getCity().length() - 2;
-            while (i > 0) {
-                $("[data-test-id=city] .input__control").sendKeys(Keys.BACK_SPACE);
-                i--;
-            }
-            $(".menu-item__control").click();
-            $(".button__text").click();
-        }
-        $("[data-test-id=success-notification]>.notification__content").shouldHave(Condition.exactText("Встреча успешно запланирована на " + firstMeetingDate));
-        $("[placeholder='Дата встречи']").sendKeys(Keys.chord(Keys.SHIFT, Keys.UP), Keys.DELETE);
-        $("[placeholder='Дата встречи']").setValue(secondMeetingDate);
-        $$("button").find(Condition.exactText("Запланировать")).click();
-        $(withText("Необходимо подтверждение")).shouldBe(Condition.visible, Duration.ofSeconds(15));
-        $("div.notification__content > button").click();
-        $("[data-test-id=success-notification]>.notification__content").shouldHave(Condition.exactText("Встреча успешно запланирована на " + secondMeetingDate));
+        $("[data-test-id=city] input").setValue(validUser.getCity());
+        $("[data-test-id=date] input").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
+        $("[data-test-id=date] input").setValue(firstMeetingDate);
+        $("[data-test-id='name'] input").setValue(validUser.getName());
+        $("[data-test-id='phone'] input").setValue(validUser.getPhone());
+        $("[data-test-id='agreement']").click();
+        $(byText("Запланировать")).click();
+        $(byText("Успешно!")).shouldBe(visible, Duration.ofSeconds(15));
+        $("[data-test-id=success-notification] .notification__content")
+                .shouldHave(exactText("Встреча успешно запланирована на " + firstMeetingDate)).shouldBe(visible);
+        $("[data-test-id=date] input").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.BACK_SPACE);
+        $("[data-test-id=date] input").setValue(secondMeetingDate);
+        $(byText("Запланировать")).click();
+        $("[data-test-id=replan-notification] .notification__content")
+                .shouldHave(text("У вас уже запланирована встреча на другую дату. Перепланировать?")).shouldBe(visible);
+        $("[data-test-id=replan-notification] button.button").click();
+        $("[data-test-id=success-notification] .notification__content")
+                .shouldHave(text("Встреча успешно запланирована на " + secondMeetingDate)).shouldBe(visible);
     }
 
+    @Test
+    @DisplayName("Should Fail Validation For City With Error Message")
+    void shouldFailValidationForCityWithErrorMessage() {
+        var validUser = DataGenerator.Registration.generateUser("ru");
+        var daysToAddForFirstMeeting = 2;
+        var meetingDate = DataGenerator.generateDate(daysToAddForFirstMeeting);
+        $("[data-test-id=city] input").setValue("Минск");
+        $("[data-test-id=date] input").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
+        $("[data-test-id=date] input").setValue(meetingDate);
+        $("[data-test-id='name'] input").setValue(validUser.getName());
+        $("[data-test-id='phone'] input").setValue(validUser.getPhone());
+        $("[data-test-id='agreement']").click();
+        $(".button").click();
+        $("[data-test-id=city] .input__sub")
+                .shouldBe(visible, Duration.ofSeconds(15))
+                .shouldHave(Condition.exactText("Доставка в выбранный город недоступна"));
+
+    }
 }

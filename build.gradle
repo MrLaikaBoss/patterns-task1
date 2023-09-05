@@ -1,6 +1,5 @@
 plugins {
     id 'java'
-    id "io.freefair.lombok" version "8.2.2"
 }
 
 group 'ru.netology'
@@ -15,9 +14,11 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
     testImplementation 'com.codeborne:selenide:6.17.1'
     testImplementation 'com.github.javafaker:javafaker:1.0.2'
+    testImplementation 'org.projectlombok:lombok:1.18.28'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.28'
 }
 
 test {
